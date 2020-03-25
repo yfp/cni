@@ -1,0 +1,28 @@
+.container{
+    /* width: 70%;
+    margin: 0 auto; */
+}
+
+img{
+    /* width: 19vw; */
+    width: 24vh;
+    box-sizing: border-box;
+    border-radius: 5px;
+    transform: scaleX(-1);
+}
+
+img.simple:hover{
+    border: 5px solid black;
+}
+
+img.red{
+    border: 70px solid red;
+}
+
+img.blue{
+    border: 70px solid blue;
+}
+
+img.yellow{
+    border: 70px solid darkkhaki;
+}

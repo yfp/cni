@@ -1,0 +1,54 @@
+<html>
+<head>
+    
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js">
+    </script>
+    <script lang="javascript" src="https://cdnjs.cloudflare.com/ajax/libs/zepto/1.2.0/zepto.min.js"></script>
+    <p class="map" style="font-size: 100px;"></p>
+    <p class="start" style="font-size: 30;"></p>
+<script>
+function getParameterByName(name) {
+    url = window.location.href;
+    name = name.replace(/[\[\]]/g, '\\$&');
+    var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+        results = regex.exec(url);
+    if (!results) return '';
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2].replace(/\+/g, ' '));
+}
+seed = getParameterByName('seed');
+
+var prng = new Math.seedrandom();
+// if(seed){
+//     prng = new Math.seedrandom(seed);
+// }
+
+s = "🔵🔵🔵🔵🔵🔵🔵🔴🔴🔴🔴🔴🔴🔴💀😶😶😶😶";
+color=""
+if(prng() > 0.5){
+    s = "🔴" + s;
+    color = "Red";
+}else{
+    s = "🔵" + s;
+    color = "Blue";
+}
+function shuffle(a) {
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+s = shuffle(Array.from(s));
+s = s.slice( 0, 5).join('')+"<br/>"+
+    s.slice( 5,10).join('')+"<br/>"+
+    s.slice(10,15).join('')+"<br/>"+
+    s.slice(15,20).join('');
+
+$('p.map').html(s);
+$('p.start').html(color+" starts");
+</script>
+</body>
+</html>
