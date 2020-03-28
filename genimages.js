@@ -24,21 +24,8 @@ function decrypt(message, key){
 
 images = []
 for(s of data){
-    console.log(s.slice(0,20));
     images.push( decrypt(pdata+s, key) )
 }
-
-console.log(images.length);
-
-// $('img').each(function(i){
-//     let j = i;//cards[cards.length-CARDS_ON_THE_TABLE+i].toString().padStart(3, "0");
-//     let str = "data:image/jpeg;base64, " + images[j];
-//     $(this).attr('src', str).addClass('simple');
-
-// });
-
-
-
 
 
 
@@ -72,13 +59,13 @@ function get_cards(cards, seed){
 cards = seed.split(',').reduce(get_cards, []);
 
 
-$('img').each(function(i){
+$('.image').each(function(i){
     let j = cards[cards.length-CARDS_ON_THE_TABLE+i];
     let str = "data:image/jpeg;base64, " + images[j];
-    $(this).attr('src', str).addClass('simple');
+    $(this).css('background-image', `url("${str}")`).addClass('simple');
 });
 
-$('img').click(function(){
+$('.image').click(function(){
     if($(this).hasClass('simple')){
         $(this).removeClass('simple').addClass('red');
     }else if($(this).hasClass('red')){
