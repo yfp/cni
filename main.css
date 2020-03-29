@@ -27,6 +27,7 @@
     background-repeat: no-repeat;
     background-color: white;
     background-blend-mode: multiply;
+    transform: scaleX(-1);
 }
 
 .image{
@@ -43,7 +44,7 @@
 }
 
 .image.blue{
-    background-color: blue;
+    background-color: rgb(127, 127, 255);
 }
 
 .image.yellow{
