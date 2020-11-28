@@ -1,0 +1,56 @@
+<html>
+
+<head>
+    <link rel="stylesheet" type="text/css" href="main.css">
+</head>
+
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
+    <script lang="javascript" src="https://cdnjs.cloudflare.com/ajax/libs/zepto/1.2.0/zepto.min.js"></script>
+    <div id="app">
+        <router-view></router-view>
+    </div>
+    <script type="text/x-template" id="start-screen">
+        <div class="start-panel">
+        <div class="title" align="center">
+            CNI v2
+        </div>
+        <div class="start-row" align="center">
+            <button class="start-button create-room" v-on:click="createRoom">Create room</button>
+        </div>
+        <div class="start-row" align="center">
+            <input type="text" class="start-input"/>
+            <button class="start-button disabled">Use code</button>
+        </div>
+        </div>
+    </script>
+    <script type="text/x-template" id="game">
+        <div class="container">
+            <div v-for="item in items" :class="[item.cl, item.cl == 'image' ? item.color : '']" :style="{backgroundImage: item.url}">
+                {{item.index}}
+            </div>
+        </div>
+    </script>
+    <script type="text/x-template" id="client-name-screen">
+        <div>
+            <form class="start-panel" v-if="!player" v-on:submit="enterPlayerName">
+            <div class="title" align="center">
+                CNI v2
+            </div>
+            <div class="start-row" align="center">
+                <div class="start-el"> Your name: </div>
+                <input type="text" class="start-input" id="client-name" v-model="input"/>
+                <button type="submit" class="start-button" :disabled="input==''">Go</button>
+            </div>
+            </form>
+            <game-field v-if="player" ref="game"></game-field>
+        </div>
+    </script>
+    <script lang="javascript" src="../data.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <script src="https://unpkg.com/vue-router/dist/vue-router.js"></script>
+    <script src="https://cdn.ably.io/lib/ably.min-1.js"></script>
+    <script lang="javascript" src="controller.js"></script>
+</body>
+
+</html>
