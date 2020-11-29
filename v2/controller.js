@@ -41,11 +41,10 @@ const StartScreen = {
 }
 
 const Server = {
-  template: '<game-field ref="game"></game-field>',
+  template: '<game-field ref="game" v-on:update="updateClients" v-on:serverclick="serverClick" v-on:updateleaders="updateLeaders" v-on:newround="newRound"></game-field>',
   mounted: function() {
     console.log("server");
-    this.deal = this.$refs.game.generateDeal(this.$route.params.seed);
-    this.$refs.game.deal(this.deal);
+    this.$refs.game.role = 'server';
     new Math.seedrandom();
     G.ably = new Ably.Realtime({
       key: G.apikey,
@@ -53,23 +52,49 @@ const Server = {
     });
     G.channel = G.ably.channels.get('ch-'+this.$route.params.room);
     G.channel.presence.subscribe('enter', this.newPlayer);
-    G.channel.presence.subscribe('leave', function(member) {
-      console.log('Member ' + member.clientId + ' left');
-    });
-    this.real_colors = this.generateColors();
-    console.log(this.real_colors)
-    this.updateClients();
+    G.channel.presence.subscribe('update', this.newPlayer);
+    G.channel.presence.subscribe('leave', this.playerLeft);
+    G.channel.publish('new-server', {});
+    this.newRound();
   },
   methods: {
+    newRound: function() {
+      this.$refs.game.pregame = true;
+
+      this.deal = this.$refs.game.generateDeal(this.$route.params.seed);
+      console.log(this.deal);
+      this.$refs.game.deal(this.deal);
+      this.real_colors = this.generateColors();
+      this.$refs.game.known_colors = this.real_colors.map(i => 0);
+      this.$refs.game.updateColors(this.$refs.game.known_colors);
+      this.$refs.game.startingTeam = this.findStartingTeam();
+      this.$refs.game.splitTeams();
+      this.updateClients();
+    },
     newPlayer: function(member) {
       console.log('Member ' + member.clientId + ' entered');
-      console.log(member);
+      name = member.clientId;
+      if(!(name in this.$refs.game.players) && this.$refs.game.pregame) {
+        this.$refs.game.players[name] = {name: name.charAt(0).toUpperCase() + name.slice(1), led: 0};
+        this.$refs.game.splitTeams();
+        // this.$refs.game.teams
+      }
       this.updateClients();
+      if(!this.$refs.game.pregame) this.updateLeaders();
+    },
+    playerLeft: function(member) {
+      console.log('Member ' + member.clientId + ' left');
+      // name = member.clientId;
+      // delete this.$refs.game.players[name];
+      // this.updateClients();
     },
     updateClients: function() {
       G.channel.publish('update', {
         deal: this.deal,
-        known_colors: this.real_colors
+        known_colors: this.$refs.game.known_colors,
+        teams: this.$refs.game.teams,
+        players: this.$refs.game.players,
+        pregame: this.$refs.game.pregame,
       });
     },
     generateColors: function() {
@@ -84,14 +109,28 @@ const Server = {
         return a;
       }
       return shuffle(Array.from(s)).map(e => parseInt(e));
+    },
+    findStartingTeam: function() {
+      val = this.real_colors.map(i => i==1? 1 : i==2? -1 : 0).reduce((a, b) => a + b, 0);
+      if(val == 1) return "red";
+      return "blue";
+    },
+    serverClick: function(index) {
+      this.$refs.game.known_colors[index] = this.real_colors[index];
+      this.$refs.game.updateColors(this.$refs.game.known_colors);
+      this.updateClients();
+    },
+    updateLeaders: function() {
+      G.channel.publish('leaderInfo', {
+        real_colors: this.real_colors
+      });
     }
   },
   data: function(){
     return {
       deal: [],
-      known_colors: [],
       real_colors: [],
-      players: {}
+      players: {},
     }
   }
 }
@@ -116,16 +155,41 @@ const Client = {
       G.channel = G.ably.channels.get('ch-'+this.$route.params.room);
       $this = this;
       G.channel.subscribe('update', function(message) {
-        console.log(message.data);
+        $this.$refs.game.you = $this.player;
         $this.$refs.game.deal(message.data.deal);
-        $this.$refs.game.updateColors(message.data.known_colors);
+        $this.$refs.game.teams = message.data.teams;
+        $this.$refs.game.players = message.data.players;
+        $this.$refs.game.pregame =  message.data.pregame;
+        teams = message.data.teams;
+        role = 'player';
+        if(teams){
+          if(teams[0].players.length>0) if(teams[0].players[0] == $this.player)
+            role = 'leader';
+          if(teams[1].players.length>0) if(teams[1].players[0] == $this.player)
+            role = 'leader'
+          $this.$refs.game.role = role;
+          if(teams[0].players.includes($this.player))
+            $this.$refs.game.teamColor = teams[0].color;
+          if(teams[1].players.includes($this.player))
+            $this.$refs.game.teamColor = teams[1].color;
+        }
+        if(message.data.pregame || $this.$refs.game.role == 'player')
+          $this.$refs.game.updateColors(message.data.known_colors);
+      });
+      G.channel.subscribe('leaderInfo', function(message) {
+        if($this.$refs.game.role != 'leader') return;
+        $this.$refs.game.updateColors(message.data.real_colors);
+      });
+      G.channel.subscribe('new-server', function() {
+        console.log('New server');
+        G.channel.presence.update();
       });
       G.channel.presence.enter();
     }
   },
   data: function() {
     return {
-      input: 'ivan',
+      input: '',
       player: false
     };
   }
@@ -138,8 +202,16 @@ const GameComponent = Vue.component('game-field',{
   },
   data: function(){
     return {
+      role: 'player',
+      teamColor: '',
       cards: Array(CARDS_NUMBER).join().split(','),
       items: [],
+      you: '',
+      players: {},
+      teams: [{color: "red",players: []},{color: "blue",players: []}],
+      startingTeam: 'blue',
+      wordZone: '',
+      pregame: true,
     }
   },
   methods: {
@@ -154,13 +226,14 @@ const GameComponent = Vue.component('game-field',{
       j=0;
       for(i=0; i<30; i++){
         if(i==0)        this.items.push({cl: "blank"});
-        else if(i<=5)   this.items.push({cl: "letter", index: ''+i});
-        else if(i%6==0) this.items.push({cl: "letter", index: letter[i/6 - 1]});
+        else if(i<=5)   this.items.push({cl: "letter", letter: ''+i});
+        else if(i%6==0) this.items.push({cl: "letter", letter: letter[i/6 - 1]});
         else {
           this.items.push({
             cl: "image",
             color: "unknown",
-            url: ""
+            url: "",
+            index: j
           });
           j+=1;
         }
@@ -181,7 +254,9 @@ const GameComponent = Vue.component('game-field',{
           }
           return cards;
       }
-      return seed.split(',').reduce(get_cards, []);
+      cards = seed.split(',').reduce(get_cards, []);
+      console.log(cards);
+      return cards.slice(cards.length-20);
     },
     deal: function(deal) {
       j=0;
@@ -204,8 +279,59 @@ const GameComponent = Vue.component('game-field',{
           this.items[i].color = col;
           j+=1;
         }
-
-    }
+    },
+    splitTeams: function() {
+      this.teams[0].color = this.startingTeam;
+      this.teams[1].color = this.startingTeam == "red" ? "blue" : "red";
+      this.teams[0].players = [];
+      this.teams[1].players = [];
+      ids = Object.keys(this.players);
+      if(ids.length == 0) return
+      if(ids.length == 1) {
+        this.teams[0].players.push(ids[0]);
+        return;
+      }
+      minled = Math.min.apply(Math, ids.map((i) => this.players[i].led));
+      leader_shortlist = []
+      while(leader_shortlist.length < 2) {
+        leader_shortlist = leader_shortlist.concat(
+          ids.filter(i => this.players[i].led == minled));
+        minled += 1;
+      }
+      leaders = [];
+      while(leaders.length < 2){
+        i = Math.floor(leader_shortlist.length * Math.random());
+        leaders.push(leader_shortlist[i]);
+        ids.splice(ids.indexOf(leader_shortlist[i]),1);
+        leader_shortlist.splice(i, 1);
+      }
+      this.teams[0].players.push(leaders[0]);
+      this.teams[1].players.push(leaders[1]);
+      j=0;
+      while(ids.length>0){
+        i = Math.floor(ids.length * Math.random());
+        this.teams[j%2].players.push(ids[i]);
+        ids.splice(i,1);
+        j+=1;
+      }
+      this.$emit('update');
+    },
+    serverClick: function(index, event){
+      this.$emit('serverclick', index);
+    },
+    startRound: function() {
+      if(this.teams[0].players.length + this.teams[1].players.length < 2) return;
+      this.pregame = false;
+      this.$emit('updateleaders');
+    },
+    newRound: function() {
+      params = this.$route.params;
+      params.seed = params.seed + ',' + 'x';
+      router.push({
+        path: '/' + params.key + '/' + params.room + '/' + params.seed
+      })
+      this.$emit('newround');
+    },
   }
 });
 
@@ -214,11 +340,12 @@ const router = new VueRouter({
     path: '/:key',
     component: StartScreen
   }, {
-    path: '/:key/:room/:seed',
-    component: Server
-  }, {
     path: '/:key/:room',
     component: Client
+  },
+  {
+    path: '/:key/:room/:seed',
+    component: Server
   }]
 })
 

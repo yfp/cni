@@ -1,8 +1,16 @@
 :root {
     --side: min(24vh - 10px, 19vw - 10px);
+    /*--side: min(24vh - 10px, 10vw - 10px);*/
+}
+
+.playing-field{
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
 }
 
 .container{
+    order: 1;
     display: grid;
     grid-template-columns: 40px  var(--side) var(--side) var(--side) var(--side) var(--side);
     grid-template-rows: 40px  var(--side) var(--side) var(--side) var(--side);
@@ -18,6 +26,111 @@
   font-size: 30px;
   font-family: sans-serif;
   font-weight: 700;
+}
+
+.player-list {
+  /*border: 1px black solid;*/
+  flex-grow: 4;
+  min-width: 300px;
+  max-width: 500px;
+  max-height: 75vw;
+  order: 2;
+  font-family: sans-serif;
+  font-weight: 700;
+}
+
+.player-list .controls {
+  height: 30px;
+}
+
+.ctrl-button {
+  color: #494949;
+  text-decoration: none;
+  background: #ffffff;
+  padding: 0px 5px 0px 5px;
+  vertical-align: text-bottom;
+  font-family: sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  height: 30px;
+  border: 4px solid #494949;
+  display: inline-block;
+  transition: all 0.4s ease 0s;
+}
+
+.ctrl-button:hover {
+  background: #0a0;
+  border-color: #0a0;
+  color: #000;
+  transition: all 0.4s ease 0s; 
+}
+
+.ctrl-button:focus { 
+  outline:none;
+} 
+
+/*.player {
+  border-radius:28px;
+  text-align: center;
+  color:#ffffff;
+  font-family:Arial;
+  font-size:17px;
+  padding:16px 31px;
+  margin: 5px;
+  text-decoration:none;
+  text-shadow:0px 1px 0px #2f6627;
+}*/
+
+.team {
+  margin-top: 20px;
+}
+
+/*.team-blue .player{
+  color:#00f8;
+}
+
+.team-blue .leader{
+  color:#00f;
+}
+*/
+
+/*.team-red .player{
+  color:#f008;
+}
+
+.team-red .leader{
+  color:#f00;
+}*/
+
+ul {
+  list-style: none; /* Remove default bullets */
+}
+
+ul.team li::before {
+  content: "\25CF";  /* Add content: \2022 is the CSS Code/unicode for a bullet */
+  font-weight: bold; /* If you want it to be bold */
+  display: inline-block; /* Needed to add space between the bullet and the text */
+  width: 1em; /* Also needed for space (tweak if needed) */
+  margin-left: -1em; /* Also needed for space (tweak if needed) */
+  text-align: center;
+  font-family: sans-serif;
+  font-weight: 700;
+}
+
+ul.team-red li::before{
+  color: red;
+}
+
+ul.team li.leader::before{
+  content: "\265B";
+}
+
+ul.team-blue li::before{
+  color: blue;
+}
+
+li {
+  font-size: max(20px, 3vw, 3vh);
 }
 
 .image{
@@ -38,11 +151,11 @@
 }
 
 .image.red{
-    background-color: #ff000080;
+    background-color: #ff000020;
 }
 
 .image.blue{
-    background-color: #0000ff60;
+    background-color: #0000ff30;
 }
 
 .image.yellow{

@@ -2,6 +2,7 @@
 
 <head>
     <link rel="stylesheet" type="text/css" href="main.css">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
 </head>
 
 <body>
@@ -25,9 +26,34 @@
         </div>
     </script>
     <script type="text/x-template" id="game">
-        <div class="container">
-            <div v-for="item in items" :class="[item.cl, item.cl == 'image' ? item.color : '']" :style="{backgroundImage: item.url}">
-                {{item.index}}
+        <div class="playing-field">
+            <div class="player-list">
+                <div class="info">
+                    <span v-if="role=='server'">You own the room</span>
+                    <span v-if="role=='player'"></span>
+                </div>
+                <div class="controls">
+                    <div class="word-zone">
+                        {{wordZone}}
+                    </div>
+                    <button v-if="role=='server' && pregame" class="ctrl-button" v-on:click="splitTeams">reshuffle</button>
+                    <button v-if="role=='server' && pregame" class="ctrl-button" v-on:click="startRound">start</button>
+                    <button v-if="role=='server' && !pregame" class="ctrl-button" v-on:click="newRound">new round</button>
+                </div>
+                <ul v-for="team in teams" :class="['team', 'team-'+team.color]">
+                    <li v-for="name in team.players" :class="['player', team.players[0] == name?'leader':'']">
+                        {{players[name].name}} {{you == name ? '(you)' : ''}} {{Array(players[name].led+1).join("✓")}}
+                    </li>
+                </ul>
+            </div>
+            <div class="container">
+                <div v-for="item in items"
+                    :class="[item.cl, item.cl == 'image' ? item.color : '']"
+                    :style="{backgroundImage: item.url}"
+                    v-on:click.alt="serverClick(item.index)"
+                >
+                    {{item.letter}}
+                </div>
             </div>
         </div>
     </script>
