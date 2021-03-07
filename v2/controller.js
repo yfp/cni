@@ -1,5 +1,5 @@
 function decrypt(message, key) {
-  arr = Uint8Array.from(atob(message), c => c.charCodeAt(0))
+  arr = Uint8Array.from(atob(message), c => c.charCodeAt(0));
 
   out = new Uint8Array(arr.length);
   for (var i = 0; i < arr.length; i += 1) {
@@ -7,6 +7,7 @@ function decrypt(message, key) {
   }
   return btoa(String.fromCharCode.apply(null, out));
 }
+
 
 CARDS_NUMBER = 280;
 CARDS_ON_THE_TABLE = 20;
@@ -26,7 +27,15 @@ const StartScreen = {
       console.log("Room create " + room);
       params = this.$route.params;
       router.push({
-        path: params.key + '/' + room + '/' + room
+        path: params.key +'/' + 's/' + room + '/' + room
+      })
+    },
+    connectClient: function() {
+      room = this.roomInput.toUpperCase();
+      console.log("Connect to room " + room);
+      params = this.$route.params;
+      router.push({
+        path: params.key +'/' + 'c/' + room + '/start'
       })
     },
     genRoomCode: function genCode() {
@@ -37,6 +46,11 @@ const StartScreen = {
       rnd = (arr) => arr[Math.floor(prng() * arr.length)]
       return rnd(letters) + rnd(all) + rnd(all) + rnd(all);
     }
+  },
+  data: function(){
+    return {
+      roomInput: ''
+    };
   }
 }
 
@@ -138,13 +152,23 @@ const Server = {
 const Client = {
   template: '#client-name-screen',
   mounted: function() {
-    if(this.input != '') this.enterPlayerName(new Event('event'));
+    params = this.$route.params;
+    console.log(params.playername);
+    if(params.playername == 'start')
+      return;
+    this.player = atob(params.playername);
+    this.connect();
   },
   methods: {
     enterPlayerName: function(e) {
-      this.player = this.input;
-      console.log("player "+this.player)
       e.preventDefault();
+      params = this.$route.params;
+      cryptedName = btoa(this.input);
+      console.log(this.input, " >>  ", cryptedName);
+      this.player = this.input
+      router.push({
+        path: "/" + params.key +'/' + 'c/' + params.room + '/' + cryptedName
+      });
       this.connect();
     },
     connect: function() {
@@ -316,6 +340,32 @@ const GameComponent = Vue.component('game-field',{
       }
       this.$emit('update');
     },
+    makeLeader: function(event, playerName) {
+      if( this.teams[0].players.indexOf(playerName) >= 0 ) {
+        team = this.teams[0].players;
+      } else {
+        team = this.teams[1].players;
+      }
+      index = team.indexOf(playerName);
+      team.splice(index, 1);
+      team.unshift(playerName);
+      this.$emit('update');
+    },
+    switchTeam: function(event, playerName) {
+      if( this.teams[0].players.indexOf(playerName) >= 0 ) {
+        teamFrom = this.teams[0].players;
+        teamTo = this.teams[1].players;
+      } else {
+        teamFrom = this.teams[1].players;
+        teamTo = this.teams[0].players;
+      }
+      if(teamFrom.length <= 1)
+        return;
+      index = teamFrom.indexOf(playerName);
+      teamFrom.splice(index, 1);
+      teamTo.push(playerName);
+      this.$emit('update');
+    },
     serverClick: function(index, event){
       this.$emit('serverclick', index);
     },
@@ -325,10 +375,15 @@ const GameComponent = Vue.component('game-field',{
       this.$emit('updateleaders');
     },
     newRound: function() {
+      for(i in [0,1])
+        if(this.teams[i].players.length>0)
+          if(this.teams[i].players[0] in this.players)
+            this.players[this.teams[i].players[0]].led += 1;
+      console.log(this.players);
       params = this.$route.params;
       params.seed = params.seed + ',' + 'x';
       router.push({
-        path: '/' + params.key + '/' + params.room + '/' + params.seed
+        path: '/' + params.key + '/s/' + params.room + '/' + params.seed
       })
       this.$emit('newround');
     },
@@ -340,11 +395,11 @@ const router = new VueRouter({
     path: '/:key',
     component: StartScreen
   }, {
-    path: '/:key/:room',
+    path: '/:key/c/:room/:playername',
     component: Client
   },
   {
-    path: '/:key/:room/:seed',
+    path: '/:key/s/:room/:seed',
     component: Server
   }]
 })

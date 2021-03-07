@@ -20,8 +20,8 @@
             <button class="start-button create-room" v-on:click="createRoom">Create room</button>
         </div>
         <div class="start-row" align="center">
-            <input type="text" class="start-input"/>
-            <button class="start-button disabled">Use code</button>
+            <input type="text" class="start-input" v-model="roomInput"/>
+            <button class="start-button disabled" v-on:click="connectClient" :disabled="roomInput==''">Use code</button>
         </div>
         </div>
     </script>
@@ -43,6 +43,8 @@
                 <ul v-for="team in teams" :class="['team', 'team-'+team.color]">
                     <li v-for="name in team.players" :class="['player', team.players[0] == name?'leader':'']">
                         {{players[name].name}} {{you == name ? '(you)' : ''}} {{Array(players[name].led+1).join("✓")}}
+                        <span v-if="role=='server' && pregame" class="hover-span" v-on:click="makeLeader($event, name)">&#x2655;</span>
+                        <span v-if="role=='server' && pregame" class="hover-span" v-on:click="switchTeam($event, name)">&#x21C5;</span>
                     </li>
                 </ul>
             </div>

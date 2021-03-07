@@ -131,6 +131,22 @@ ul.team-blue li::before{
 
 li {
   font-size: max(20px, 3vw, 3vh);
+  line-height: 1.2;
+}
+
+.hover-span {
+  display: none;
+  cursor: pointer;
+  font-size: max(16px, 2.5vw, 2.5vh);
+  vertical-align: middle;
+/*  line-height: 1.2;*/
+  margin: 0px;
+  /*margin-bottom: 3px;*/
+  padding: 0px;
+}
+
+li.player:hover .hover-span{
+  display: inline-block;
 }
 
 .image{
